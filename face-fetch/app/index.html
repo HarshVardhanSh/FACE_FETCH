@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>app</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  {% set base = '.' %}
+  {% include template-navbar.html %}
+  <!-- TODO: Filter bars -->
+  <div class="container-fluid py-4">
+    <div class="row">
+      <div class="col-md-4">
+        <button class="btn btn-success" id="sim">Select Similar</button>
+        <button class="btn btn-danger" id="diss">Select Dissimilar</button>
+
+        <div class="similar_images">
+          <p class="h1">Similar:</p>
+          <template>
+            <% data.similar && _.each(data.similar, function(o){ %>
+            <img src="<%= 'preview/' + o %>" height="60px" width="60px">
+            <% }) %>
+          </template>
+        </div>
+        <div class="diss_images">
+          <p class="h1">Dissimilar:</p>
+          <template>
+            <% data.dissimilar && _.each(data.dissimilar, function(o){ %>
+            <img src="<%= 'preview/' + o %>" height="60px" width="60px">
+            <% }) %>
+          </template>
+        </div>
+      </div>
+      <div class="col-md-8" id="main">
+        <template>
+          <div class="d-flex flex-wrap justify-content-between">
+
+            <% data.attrs && data.attrs.forEach(function(attr){ %>
+            <a class="btn btn-primary col-md-3 my-1 mr-1 urlfilter" data-mode="toggle"
+              href="?attribute=<%= attr %>"><%= attr %></a>
+            <% }) %>
+            <% data.images && console.log(data.images.length) %>
+            <% data.images && _.each(data.images, function(image){ %>
+            <img class="preview" src="preview/<%= image %>" height="120px" width="120px">
+            <% }) %>
+          </div>
+        </template>
+        <div class="d-flex flex-row justify-content-center">
+          <button class="btn btn-secondary col-md-3 mr-1" id="submit">Submit</button>
+          <button class="btn btn-danger col-md-3" id="reset">Reset</button>
+        </div>
+      </div>
+    </div>
+
+
+  </div><!-- .container-fluid -->
+
+  <script src="ui/jquery/dist/jquery.min.js"></script>
+  <script src="ui/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="ui/lodash/lodash.min.js"></script>
+  <script src="ui/morphdom/dist/morphdom-umd.min.js"></script>
+  <script src="ui/g1/dist/g1.min.js"></script>
+  <script>
+    var similar_dissimilar_flag = 1 // 1 adds to similar, 0 to dissimilar
+    var similar_images = []
+    var dissimilar_images = []
+    var total_images = []
+    var payload = {}
+    $(function () {
+      $('body').on('click', '.preview', function (o) {
+        image = o.currentTarget.src.split('/').slice(-1)[0]
+        if (similar_dissimilar_flag === 1)
+          similar_images.push(image)
+        else
+          dissimilar_images.push(image)
+        total_images = _.remove(total_images, function (x) { return x !== image })
+        $('body').template({
+          data: {
+            'similar': similar_images,
+            'dissimilar': dissimilar_images,
+            'images': total_images,
+            'attrs': null
+          }
+        }, { engine: 'vdom' })
+      })
+      $('#submit').on('click', function () {
+        url = g1.url.parse(location.href)
+        if (url.searchList.attribute && url.searchList.attribute.length > 0) {
+          payload = { 'attrs': url.searchList.attribute }
+        }
+        if (similar_images.length > 0 || dissimilar_images.length > 0) {
+          payload = {
+            'similar': similar_images,
+            'dissimilar': dissimilar_images
+          }
+        }
+        $.post('labelled_images', payload).done(function (images) {
+          // this data should always be images
+          console.log('doIreachhere?')
+          console.log(images)
+          total_images = JSON.parse(images)
+          $('#main').template({
+            'data':
+            {
+              'images': total_images,
+              'attrs': null
+            }
+          },
+            { engine: 'vdom' })
+        })
+      })
+      $('body').urlfilter({
+        target: 'pushState',
+      })
+      $.getJSON('js/attributes.json').done(function (attr) {
+        $('#main').template({ data: { attrs: attr.attributes, images: null } }, { engine: 'vdom' })
+      })
+      // Toggle Flag Buttons
+      $('#sim').on('click', function () { similar_dissimilar_flag = 1 })
+      $('#diss').on('click', function () { similar_dissimilar_flag = 0 })
+      $('#reset').on('click', function () {
+        $.get('reset').done(function (data) {
+          console.log(data)
+          window.location = './'
+        })
+      })
+    })
+  </script>
+  <!-- Commonly used libraries:
+  <script src="ui/d3v5/dist/d3.min.js"></script>
+  <script src="ui/moment/min/moment-with-locales.min.js"></script>
+  <script src="ui/daterangepicker/daterangepicker.js"></script>
+  <script src="ui/leaflet/dist/leaflet.js"></script>
+  <script src="ui/topojson/dist/topojson.min.js"></script>
+  -->
+</body>
+
+</html>
