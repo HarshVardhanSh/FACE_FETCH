@@ -1,4 +1,4 @@
-# app
+# FaceFetch app
 
 ## Setup
 
@@ -7,7 +7,3 @@
 - Copy assets from shared repo, e.g. `demo.gramener.com:/deploy/<user>/<repo>/`
 - From the repo folder, run `gramex setup .`
 - From the repo folder, run `gramex`
-
-## Contributions
-
-- calmdownkarm <karmanyaaggarwal@gmail.com>
